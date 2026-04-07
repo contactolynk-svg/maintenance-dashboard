@@ -3,6 +3,9 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Maintenance Dashboard',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
