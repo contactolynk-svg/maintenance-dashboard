@@ -63,18 +63,20 @@ export default async function DashboardPage() {
     .maybeSingle()
 
   const firstName = profile?.first_name ?? 'there'
-
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
   const quote = QUOTES[dayOfYear % QUOTES.length]
 
   const workOrders = await getWorkOrders()
   const { data: statuses } = await supabase.from('task_status').select('*')
+  const { data: cachedAddresses } = await supabase.from('unit_addresses').select('*')
 
   const statusMap: Record<number, any> = {}
   statuses?.forEach(s => { statusMap[s.buildium_task_id] = s })
+
+  const addressMap: Record<number, string> = {}
+  cachedAddresses?.forEach(a => { addressMap[a.unit_id] = a.address })
 
   const tasks = workOrders.map((task: any) => {
     const status = statusMap[task.Id]
@@ -82,11 +84,14 @@ export default async function DashboardPage() {
     const tenant = task.RequestedByUserEntity
       ? `${task.RequestedByUserEntity.FirstName} ${task.RequestedByUserEntity.LastName}`
       : null
+    const address = addressMap[task.UnitId] ?? null
+
     return {
       id: task.Id,
       title: task.Title,
       tenant,
-      address: task.UnitAgreement?.Name ?? null,
+      address,
+      unitId: task.UnitId,
       stage,
       contractor: status?.contractor_name ?? null,
       deadline: status?.deadline ?? null,

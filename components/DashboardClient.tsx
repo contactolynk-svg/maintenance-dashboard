@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
@@ -64,6 +64,18 @@ export default function DashboardClient({
   dueToday: number
 }) {
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const [addresses, setAddresses] = useState<Record<number, string>>(
+  Object.fromEntries(tasks.filter(t => t.address).map((t: any) => [t.id, t.address]))
+)
+
+useEffect(() => {
+  const missing = tasks.filter((t: any) => !t.address && t.unitId)
+  missing.forEach(async (task: any) => {
+    const res = await fetch(`/api/addresses?unitId=${task.unitId}`)
+    const { address } = await res.json()
+    if (address) setAddresses(prev => ({ ...prev, [task.id]: address }))
+  })
+}, [])
   const router = useRouter()
 
   const supabase = createBrowserClient(
@@ -300,8 +312,8 @@ export default function DashboardClient({
                         <div className="task-title">{task.title}</div>
                         <div className="task-meta">
                           {task.tenant && <span>{task.tenant}</span>}
-                          {task.tenant && task.address && <div className="task-meta-dot" />}
-                          {task.address && <span>{task.address}</span>}
+                          {task.tenant && addresses[task.id] && <div className="task-meta-dot" />}
+                          {addresses[task.id] && <span>{addresses[task.id]}</span>}
                           <div className="task-meta-dot" />
                           <span style={{ fontFamily: 'DM Mono' }}>#{task.id}</span>
                         </div>
